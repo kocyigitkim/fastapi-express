@@ -10,8 +10,8 @@ class Version1 extends FastApiRouter {
      * @param {FastApiContext} ctx 
      */
     index(ctx) {
-        //var body = ctx.transform();
-        return null;
+        var body = ctx.transform();
+        return 'Halo ich bin mami';
     }
     /**
      * 

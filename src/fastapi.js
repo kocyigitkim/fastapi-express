@@ -67,7 +67,7 @@ class FastApi {
             console.log('Redis enabled');
         }
         if (fastapirouter.FastApiPluginContext.plugins && fastapirouter.FastApiPluginContext.plugins.length > 0) {
-            console.log(`Installed plugins:`);
+            console.log('Installed plugins:');
             console.log((fastapirouter.FastApiPluginContext.plugins || []).map(item => item.name).join(", "));
         } else {
             console.log('No plugin installed');
