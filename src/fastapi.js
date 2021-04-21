@@ -9,6 +9,8 @@ const connectRedis = require('connect-redis');
 const RedisStore = connectRedis(express_session);
 const EventEmitter = require('./eventEmitter');
 const nodereactserve = require('node-react-serve');
+const { FileUploadProvider } = require('./fastapifileuploadprovider');
+const FileUploadRouter = require('./fastapifileuploadprovider');
 
 
 class FastApi {
@@ -19,6 +21,8 @@ class FastApi {
         this.redisEnabled = false;
         this.onlisten = new EventEmitter();
         this.oninit = new EventEmitter();
+        this.fileUploadProvider = null;
+        this.fileDownloadProvider = null;
     }
     registerPlugin(pluginDefinition) {
         fastapirouter.registerPluginEx(pluginDefinition);
@@ -42,6 +46,19 @@ class FastApi {
     registerReact(basePath = "/", clientPath = "./client", port = 3000) {
         nodereactserve(this.app, basePath, clientPath, port, true);
         return this;
+    }
+    registerFileDownloadProvider(fileDownloadProvider) {
+        this.fileDownloadProvider = fileDownloadProvider;
+    }
+    /**
+     * 
+     * @param {FileUploadProvider} fileUploadProvider 
+     */
+    registerFileUploadProvider(fileUploadProvider = null) {
+        this.fileUploadProvider = !fileUploadProvider ? new FileUploadProvider() : fileUploadProvider;
+        this.fileUploadRouter = new FileUploadRouter({provider: this.fileUploadProvider});
+        this.app.use(this.fileUploadRouter.fupload);
+        this.fileUploadRouter.use(this.app);
     }
     async init() {
         this.app.use(bodyparser.json());

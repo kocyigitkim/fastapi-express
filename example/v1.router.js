@@ -9,18 +9,12 @@ class Version1 extends FastApiRouter {
      * 
      * @param {FastApiContext} ctx 
      */
-    index(ctx) {
-        var body = ctx.transform();
-        return 'Halo ich bin mami';
+    async index(ctx) {
+        const user = await ctx.entity(ctx, "User");
+        
+        
     }
-    /**
-     * 
-     * @param {FastApiContext} ctx 
-     * @returns 
-     */
-    custom_login(ctx){
-        ctx.res.send("custom send");
-    }
+    
 }
 
 module.exports = Version1;

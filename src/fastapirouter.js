@@ -2,6 +2,8 @@ const express = require('express');
 const objectTransformer = require('./objectTransformer');
 class FastApiPluginContext {
     static plugins = [];
+    static fileUploadPlugins = [];
+    static fileDownloadPlugins = [];
 }
 
 module.exports.FastApiPlugin = class FastApiPlugin {
@@ -46,19 +48,21 @@ function prepareAction(_this, action, isGet, disableAutoResponse = false) {
             res: res,
             next: next,
             body: reqBody,
-            session: req.session
+            session: req.session,
+            isGet: Boolean(isGet),
+            isPost: !Boolean(isGet)
         };
         args.transform = ((body, schema) => { return objectTransformer.transform(body, schema); }).bind(args, reqBody);
 
         for (var plugin of FastApiPluginContext.plugins) {
             if (plugin.isGetter) {
-                args[plugin.name] = await plugin.plugin.getterMethod();
+                args[plugin.name] = plugin.plugin.getterMethod.bind(plugin.plugin);
             }
             else {
                 args[plugin.name] = plugin.plugin;
             }
         }
-        var _response = action(args);
+        var _response = action.call(_this, args);
         var isPromise = _response instanceof Promise;
         try {
             if (isPromise) _response = await _response.catch(console.error);
