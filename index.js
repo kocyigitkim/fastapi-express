@@ -4,13 +4,13 @@ class ApiResponse{
         this.success = Boolean(data);
         this.message = message;
     }
-    success(data){
+    setSuccess(data){
         this.success = true;
         this.data = data;
         this.message = null;
         return this;
     }
-    error(message){
+    setError(message){
         this.success = false;
         this.data = null;
         this.message = message;
