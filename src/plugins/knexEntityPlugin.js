@@ -83,7 +83,7 @@ class EntityManager {
         });
         return isSuccess;
     }
-    async update(entity) {
+    async update(entity, where) {
         if (this.updateDate) {
             entity[this.updateDate.name] = new Date();
         }
@@ -95,7 +95,14 @@ class EntityManager {
         else{
             return false;
         }
-        await this.db(this.entityName).where(this.primaryKey.name, pkey).update(entity).then(p => { isSuccess = true; }).catch(err => {
+        var q = this.db(this.entityName);
+        if(Boolean(where)){
+            q = q.where(where);
+        }
+        else{
+            q = q.where(this.primaryKey.name, pkey);
+        }
+        await q.update(entity).then(p => { isSuccess = true; }).catch(err => {
             console.error(err);
             isSuccess = false;
         });
