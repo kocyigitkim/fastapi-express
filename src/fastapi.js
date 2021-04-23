@@ -23,6 +23,10 @@ class FastApi {
         this.oninit = new EventEmitter();
         this.fileUploadProvider = null;
         this.fileDownloadProvider = null;
+        this.bodyParserConfig = null;
+    }
+    setBodyParser(config){
+        this.bodyParserConfig = config;
     }
     registerPlugin(pluginDefinition) {
         fastapirouter.registerPluginEx(pluginDefinition);
@@ -61,9 +65,9 @@ class FastApi {
         this.fileUploadRouter.use(this.app);
     }
     async init() {
-        this.app.use(bodyparser.json());
-        this.app.use(bodyparser.urlencoded());
-        this.app.use(bodyparser.text());
+        this.app.use(bodyparser.json(this.bodyParserConfig));
+        this.app.use(bodyparser.urlencoded(this.bodyParserConfig));
+        this.app.use(bodyparser.text(this.bodyParserConfig));
         var config = {
             secret: 'fastapi',
             cookie: {
