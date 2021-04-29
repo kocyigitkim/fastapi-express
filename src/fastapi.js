@@ -68,6 +68,8 @@ class FastApi {
         this.app.use(bodyparser.json(this.bodyParserConfig));
         this.app.use(bodyparser.urlencoded(this.bodyParserConfig));
         this.app.use(bodyparser.text(this.bodyParserConfig));
+        this.app.use(bodyparser.raw(this.bodyParserConfig));
+        
         var config = {
             secret: 'fastapi',
             cookie: {
