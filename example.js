@@ -1,4 +1,4 @@
-const fastapi = require('./src/fastapi');
+const fastapi = require('./index').FastApi;
 const api = new fastapi();
 /*
 const AuthPlugin = require('./src/plugins/authPlugin');
