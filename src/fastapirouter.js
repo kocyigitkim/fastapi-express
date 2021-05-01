@@ -34,6 +34,52 @@ module.exports.FastApiContext = class FastApiContext {
   }
 };
 
+const MiddleWareStatus = {
+  Success: 0,
+  Error: 1,
+  Exit: 2,
+};
+module.exports.MiddleWareStatus = MiddleWareStatus;
+class FastApiMiddleware {
+  /**
+   *
+   * @param {MiddleWareStatus} status
+   */
+  constructor(status) {
+    this.status = status;
+  }
+}
+module.exports.FastApiMiddleware = FastApiMiddleware;
+class FastApiPlugin {
+  constructor(name, getterMethod, use) {
+    this.name = name;
+    this.getterMethod = getterMethod;
+    this.use = use;
+  }
+}
+module.exports.FastApiPlugin = FastApiPlugin;
+
+class FastApiContext {
+  constructor() {
+    this.req = express.request;
+    this.res = express.response;
+    this.next = express.NextFunction;
+    this.body = null;
+    this.session = null;
+  }
+  static registerPlugin(name, plugin) {
+    FastApiPluginContext.plugins.push({ name, plugin, isGetter: false });
+  }
+  static registerPluginEx(plugin) {
+    FastApiPluginContext.plugins.push({
+      name: plugin.name,
+      plugin: plugin,
+      isGetter: true,
+    });
+  }
+}
+module.exports.FastApiContext = FastApiContext;
+
 module.exports.registerPlugin = this.FastApiContext.registerPlugin;
 module.exports.registerPluginEx = this.FastApiContext.registerPluginEx;
 
@@ -57,16 +103,38 @@ function prepareAction(_this, action, isGet, disableAutoResponse = false) {
       isGet: Boolean(isGet),
       isPost: !Boolean(isGet),
     };
+
     args.transform = ((body, schema) => {
       return objectTransformer.transform(body, schema);
     }).bind(args, reqBody);
 
+    var nexts = [];
     for (var plugin of FastApiPluginContext.plugins) {
-      if (plugin.isGetter) {
+      if (plugin.isGetter && plugin.plugin.getterMethod) {
         args[plugin.name] = plugin.plugin.getterMethod.bind(plugin.plugin);
       } else {
         args[plugin.name] = plugin.plugin;
       }
+      if (plugin.plugin && plugin.plugin.use) {
+        nexts.push(plugin.plugin.use);
+      }
+    }
+    try {
+      for (var next of nexts) {
+        var task_next = next(args);
+        var result = task_next;
+        if (task_next instanceof Promise)
+          result = await task_next.catch(console.error);
+        if (result instanceof FastApiMiddleware) {
+          if (result.status == MiddleWareStatus.Exit) {
+            return;
+          } else if (result.status == MiddleWareStatus.Success) {
+            break;
+          }
+        }
+      }
+    } catch (err) {
+      console.error(err);
     }
     var _response = action.call(_this, args);
     var isPromise = _response instanceof Promise;

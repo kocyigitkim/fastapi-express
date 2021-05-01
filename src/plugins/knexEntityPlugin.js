@@ -11,6 +11,19 @@ class EntityPlugin {
         this.knex = null;
         this.entityManagers = {};
     }
+    setEncoder(encoderFunction) {
+        this.encoderFunction = encoderFunction;
+        return this;
+    }
+    setDecoder(decoderFunction) {
+        this.decoderFunction = decoderFunction;
+        return this;
+    }
+    setCoder(coder) {
+        this.encoderFunction = coder.encode;
+        this.decoderFunction = coder.decode;
+        return this;
+    }
     async getterMethod(ctx, entityName) {
         const knex = (ctx[this.knexPluginName])();
         if (!this.knex) this.knex = knex;
@@ -20,11 +33,11 @@ class EntityPlugin {
         if (!this.schemas[entityName]) {
             this.schemas[entityName] = await this.schemaInspector.columnInfo(entityName);
         }
-        if(this.entityManagers[entityName]) return this.entityManagers[entityName];
-        var entityManager = new EntityManager(knex, entityName, this.schemas[entityName]);
-        for(var entityField of entityManager.schema){
-            if(entityField.name.endsWith("Id") && entityField.name.length > 2){
-                var subEntityName = entityField.name.substr(0,entityField.name.length-2);
+        if (this.entityManagers[entityName]) return this.entityManagers[entityName];
+        var entityManager = new EntityManager(knex, entityName, this.schemas[entityName], this.encoderFunction, this.decoderFunction);
+        for (var entityField of entityManager.schema) {
+            if (entityField.name.endsWith("Id") && entityField.name.length > 2) {
+                var subEntityName = entityField.name.substr(0, entityField.name.length - 2);
                 entityManager.subEntities.push({
                     name: subEntityName,
                     foreignKey: entityField.name,
@@ -45,7 +58,9 @@ class EntityManager {
      * @param {String} entityName 
      * @param {Array} schema
      */
-    constructor(db, entityName, schema) {
+    constructor(db, entityName, schema, encoderFunction, decoderFunction) {
+        this.encoderFunction = encoderFunction || ((entity, data) => data);
+        this.decoderFunction = decoderFunction || ((entity, data) => data);
         this.db = db;
         this.entityName = entityName;
         this.schema = schema;
@@ -56,17 +71,17 @@ class EntityManager {
         this.primaryKey = schema.filter(p => p.name == schema + "Id" || p.name == "Id")[0];
         this.subEntities = [];
     }
-    processRecords(records){
-        if(!records) return [];
-        
+    processRecords(records) {
+        if (!records) return [];
+
         const _this = this;
-        return records.map(record=>{
-            for(var subEntity of _this.subEntities){
-                record[subEntity.name] = (async (subEntity, fkey)=>{
+        return records.map(record => {
+            for (var subEntity of _this.subEntities) {
+                record[subEntity.name] = (async (subEntity, fkey) => {
                     return await subEntity.manager.findone(subEntity.key, fkey);
                 }).bind(null, subEntity, record[subEntity.foreignKey]);
             }
-            return record;
+            return _this.decoderFunction(_this, record);
         })
     }
     async create(entity) {
@@ -77,7 +92,7 @@ class EntityManager {
             entity[this.isDeleted.name] = false;
         }
         var isSuccess = false;
-        await this.db(this.entityName).insert(entity).then(p => { isSuccess = true; }).catch(err => {
+        await this.db(this.entityName).insert(this.encoderFunction(this, entity)).then(p => { isSuccess = true; }).catch(err => {
             console.error(err);
             isSuccess = false;
         });
@@ -89,27 +104,27 @@ class EntityManager {
         }
         var isSuccess = false;
         var pkey = entity[this.primaryKey.name];
-        if(pkey){
+        if (pkey) {
             delete entity[this.primaryKey.name];
         }
-        else{
+        else {
             return false;
         }
         var q = this.db(this.entityName);
-        if(Boolean(where)){
+        if (Boolean(where)) {
             q = q.where(where);
         }
-        else{
+        else {
             q = q.where(this.primaryKey.name, pkey);
         }
-        await q.update(entity).then(p => { isSuccess = true; }).catch(err => {
+        await q.update(this.encoderFunction(this, entity)).then(p => { isSuccess = true; }).catch(err => {
             console.error(err);
             isSuccess = false;
         });
         return isSuccess;
     }
-    async setActive(entity){
-        if(this.isActive){
+    async setActive(entity) {
+        if (this.isActive) {
             var newEntity = {};
             newEntity[this.primaryKey.name] = entity[this.primaryKey.name];
             newEntity[this.isActive.name] = true;
@@ -117,8 +132,8 @@ class EntityManager {
         }
         return false;
     }
-    async setDeactive(entity){
-        if(this.isActive){
+    async setDeactive(entity) {
+        if (this.isActive) {
             var newEntity = {};
             newEntity[this.primaryKey.name] = entity[this.primaryKey.name];
             newEntity[this.isActive.name] = false;
@@ -126,45 +141,58 @@ class EntityManager {
         }
         return false;
     }
-    async delete(entity){
-        if(this.isDeleted){
+    async delete(entity) {
+        if (this.isDeleted) {
             entity[this.isDeleted.name] = true;
             return this.update(entity);
         }
-        else{
+        else {
             var pkey = entity[this.primaryKey.name];
             var isSuccess = false;
-            await this.db(this.entityName).where(this.primaryKey.name, pkey).del().then(p=>{isSuccess = true}).catch(console.error);
+            await this.db(this.entityName).where(this.primaryKey.name, pkey).del().then(p => { isSuccess = true }).catch(console.error);
             return isSuccess;
         }
     }
-    async find(...args){
+    async find(...args) {
         var q = this.db(this.entityName);
-        if(args && args.length > 0){
+        if (args && args.length > 0) {
             q = q.where(...args);
         }
         return this.processRecords(await q.select().catch(console.error));
     }
-    async findquery(query){
+    async findquery(query) {
         var q = this.db(this.entityName);
-        if(query){
+        if (query) {
             q = query(q, this);
         }
         return this.processRecords(await q.select().catch(console.error));
     }
-    async findone(...args){
+    async findone(...args) {
         var q = this.db(this.entityName);
-        if(args && args.length > 0){
+        if (args && args.length > 0) {
             q = q.where(...args);
         }
         return this.processRecords((await q.limit(1).select().catch(console.error) ?? []))[0];
     }
-    async findonequery(query){
+    async findonequery(query) {
         var q = this.db(this.entityName);
-        if(query){
+        if (query) {
             q = query(q, this);
         }
         return this.processRecords((await q.limit(1).select().catch(console.error) ?? []))[0];
+    }
+    /**
+     * 
+     * @param {String} name 
+     * @param {{name: String,value:Object}[]} args 
+     */
+    async storedProcedure(name, args) {
+        var objArgs = {};
+        for (var arg of args) {
+            objArgs[arg.name] = arg.value;
+        }
+        var result = (await this.db.raw(`exec ${name} ${args.map(arg => `:${arg.name}`).join(", ")}`, objArgs).catch(console.error)) || [];
+        return this.processRecords(result);
     }
 }
 
