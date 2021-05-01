@@ -11,7 +11,7 @@ class Version2 extends FastApiRouter {
      */
     async get_Index(ctx) {
         console.log(ctx);
-        
+        ctx.session.permissions = ['v1.index'];
         return "Version 2";
     }
 }

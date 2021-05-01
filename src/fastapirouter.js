@@ -7,32 +7,6 @@ class FastApiPluginContext {
   static middlewares = [];
 }
 
-module.exports.FastApiPlugin = class FastApiPlugin {
-  constructor(name, getterMethod) {
-    this.name = name;
-    this.getterMethod = getterMethod;
-  }
-};
-
-module.exports.FastApiContext = class FastApiContext {
-  constructor() {
-    this.req = express.request;
-    this.res = express.response;
-    this.next = express.NextFunction;
-    this.body = null;
-    this.session = null;
-  }
-  static registerPlugin(name, plugin) {
-    FastApiPluginContext.plugins.push({ name, plugin, isGetter: false });
-  }
-  static registerPluginEx(plugin) {
-    FastApiPluginContext.plugins.push({
-      name: plugin.name,
-      plugin: plugin,
-      isGetter: true,
-    });
-  }
-};
 
 const MiddleWareStatus = {
   Success: 0,
@@ -152,8 +126,12 @@ class FastApiRouter {
     this.controllerName = controllerName;
     this.router = express.Router();
     if (autoRegister) {
-      if (this.__proto__ && this.__proto__.register) {
-        this.__proto__.register();
+      if (
+        this.__proto__ &&
+        this.__proto__.__proto__ &&
+        this.__proto__.__proto__.register
+      ) {
+        this.__proto__.__proto__.register.call(this);
       } else {
         this.__proto__.register();
       }
