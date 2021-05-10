@@ -24,8 +24,20 @@ class FastApi {
         this.fileUploadProvider = null;
         this.fileDownloadProvider = null;
         this.bodyParserConfig = null;
+        this.sessionConfig = null;
+        this.sessionEnabled = true;
     }
-    setBodyParser(config){
+    disableSession() {
+        this.sessionEnabled = false;
+    }
+    /**
+     * 
+     * @param {express_session.SessionOptions} config 
+     */
+    setSession(config) {
+        this.sessionConfig = config;
+    }
+    setBodyParser(config) {
         this.bodyParserConfig = config;
     }
     registerPlugin(pluginDefinition) {
@@ -60,7 +72,7 @@ class FastApi {
      */
     registerFileUploadProvider(fileUploadProvider = null) {
         this.fileUploadProvider = !fileUploadProvider ? new FileUploadProvider() : fileUploadProvider;
-        this.fileUploadRouter = new FileUploadRouter({provider: this.fileUploadProvider});
+        this.fileUploadRouter = new FileUploadRouter({ provider: this.fileUploadProvider });
         this.app.use(this.fileUploadRouter.fupload);
         this.fileUploadRouter.use(this.app);
     }
@@ -69,7 +81,7 @@ class FastApi {
         this.app.use(bodyparser.urlencoded(this.bodyParserConfig));
         this.app.use(bodyparser.text(this.bodyParserConfig));
         this.app.use(bodyparser.raw(this.bodyParserConfig));
-        
+
         var config = {
             secret: 'fastapi',
             cookie: {
@@ -78,10 +90,15 @@ class FastApi {
                 maxAge: 1000 * 60 * 60 * 24 // 24 Hours
             }
         };
+        if (this.sessionConfig) {
+            config = { ...this.sessionConfig, secret: 'fastapi' };
+        }
         if (this.redisEnabled) {
             config = { ...config, store: new RedisStore({ client: redis.createClient(this.redisConfig) }) };
         }
-        this.app.use(new express_session(config));
+        if (this.sessionEnabled) {
+            this.app.use(new express_session(config));
+        }
         this.oninit.invoke([this, this.app]);
         console.log('---------------------');
         console.log('Fast Api Init');
@@ -107,6 +124,10 @@ class FastApi {
         console.log('---------------------');
         return this;
     }
+    /**
+     * 
+     * @param {RedisStoreOptions} config 
+     */
     assignRedis(config) {
         this.redisEnabled = true;
         this.redisConfig = config
