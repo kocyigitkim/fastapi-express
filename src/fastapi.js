@@ -90,16 +90,16 @@ class FastApi {
                 maxAge: 1000 * 60 * 60 * 24 // 24 Hours
             }
         };
-        if (this.sessionConfig) {
-            config = { ...this.sessionConfig, secret: 'fastapi' };
-        }
-        if (this.redisEnabled) {
-            config = { ...config, store: new RedisStore({ client: redis.createClient(this.redisConfig) }) };
-        }
+        this.oninit.invoke([this, this.app]);
         if (this.sessionEnabled) {
+            if (this.sessionConfig) {
+                config = { ...this.sessionConfig, secret: 'fastapi' };
+            }
+            if (this.redisEnabled) {
+                config = { ...config, store: new RedisStore({ client: redis.createClient(this.redisConfig) }) };
+            }
             this.app.use(new express_session(config));
         }
-        this.oninit.invoke([this, this.app]);
         console.log('---------------------');
         console.log('Fast Api Init');
         console.log(`Port: ${this.port}`);
