@@ -1,6 +1,6 @@
 {
   "name": "fastapi-express",
-  "version": "1.0.29",
+  "version": "1.0.30",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -17,15 +17,15 @@
   },
   "homepage": "https://github.com/muhammetkocyigit0/fastapi-express#readme",
   "dependencies": {
-    "body-parser": "^1.19.0",
-    "connect-redis": "^5.2.0",
-    "express": "^4.17.1",
-    "express-fileupload": "^1.2.1",
-    "express-session": "^1.17.1",
-    "knex": "^0.21.19",
+    "body-parser": "1.19.0",
+    "connect-redis": "5.2.0",
+    "express": "4.17.1",
+    "express-fileupload": "1.2.1",
+    "express-session": "1.17.1",
+    "knex": "0.21.19",
     "knex-schema-inspector": "1.2.2",
-    "moment": "^2.29.1",
-    "node-react-serve": "^1.0.2",
-    "redis": "^3.1.2"
+    "moment": "2.29.1",
+    "node-react-serve": "1.0.2",
+    "redis": "3.1.2"
   }
 }

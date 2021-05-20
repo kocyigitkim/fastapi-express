@@ -55,7 +55,13 @@ class FastApi {
         var files = recFindByExt(routerPath, "router.js");
         for (var file of files) {
             const definition = require(file);
-            (new definition()).use(this.app);
+            if (definition.default) {
+                const _default = definition.default;
+                (new _default()).use(this.app);
+            }
+            else {
+                (new definition()).use(this.app);
+            }
         }
         return this;
     }
@@ -91,13 +97,13 @@ class FastApi {
             }
         };
         this.oninit.invoke([this, this.app]);
+        if (this.sessionConfig) {
+            config = { ...this.sessionConfig, secret: 'fastapi' };
+        }
+        if (this.redisEnabled) {
+            config = { ...config, store: new RedisStore({ client: redis.createClient(this.redisConfig) }) };
+        }
         if (this.sessionEnabled) {
-            if (this.sessionConfig) {
-                config = { ...this.sessionConfig, secret: 'fastapi' };
-            }
-            if (this.redisEnabled) {
-                config = { ...config, store: new RedisStore({ client: redis.createClient(this.redisConfig) }) };
-            }
             this.app.use(new express_session(config));
         }
         console.log('---------------------');
