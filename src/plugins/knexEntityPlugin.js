@@ -102,6 +102,8 @@ class EntityManager {
         if (this.updateDate) {
             entity[this.updateDate.name] = new Date();
         }
+        entity = {...entity};
+        
         var isSuccess = false;
         var pkey = entity[this.primaryKey.name];
         if (pkey) {

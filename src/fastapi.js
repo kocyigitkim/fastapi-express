@@ -31,13 +31,20 @@ class FastApi {
      * 
      * @param {express_session.SessionOptions} config 
      */
-    setSession(config){
+    setSession(config) {
         this.sessionConfig = config;
     }
-    disableSession(){
+    disableSession() {
         this.sessionEnabled = false;
     }
-    setBodyParser(config){
+    /**
+     * 
+     * @param {express_session.SessionOptions} config 
+     */
+    setSession(config) {
+        this.sessionConfig = config;
+    }
+    setBodyParser(config) {
         this.bodyParserConfig = config;
     }
     registerPlugin(pluginDefinition) {
@@ -55,7 +62,13 @@ class FastApi {
         var files = recFindByExt(routerPath, "router.js");
         for (var file of files) {
             const definition = require(file);
-            (new definition()).use(this.app);
+            if (definition.default) {
+                const _default = definition.default;
+                (new _default()).use(this.app);
+            }
+            else {
+                (new definition()).use(this.app);
+            }
         }
         return this;
     }
@@ -72,7 +85,7 @@ class FastApi {
      */
     registerFileUploadProvider(fileUploadProvider = null) {
         this.fileUploadProvider = !fileUploadProvider ? new FileUploadProvider() : fileUploadProvider;
-        this.fileUploadRouter = new FileUploadRouter({provider: this.fileUploadProvider});
+        this.fileUploadRouter = new FileUploadRouter({ provider: this.fileUploadProvider });
         this.app.use(this.fileUploadRouter.fupload);
         this.fileUploadRouter.use(this.app);
     }
@@ -81,7 +94,7 @@ class FastApi {
         this.app.use(bodyparser.urlencoded(this.bodyParserConfig));
         this.app.use(bodyparser.text(this.bodyParserConfig));
         this.app.use(bodyparser.raw(this.bodyParserConfig));
-        
+
         var config = {
             secret: 'fastapi',
             cookie: {
@@ -90,14 +103,17 @@ class FastApi {
                 maxAge: 1000 * 60 * 60 * 24 // 24 Hours
             }
         };
-        if(this.sessionConfig){
-            config = {...this.sessionConfig, secret: 'fastapi'};
+
+        this.oninit.invoke([this, this.app]);
+        if (this.sessionConfig) {
+            config = { ...this.sessionConfig, secret: 'fastapi' };
         }
         if (this.redisEnabled) {
             config = { ...config, store: new RedisStore({ client: redis.createClient(this.redisConfig) }) };
         }
-        this.app.use(new express_session(config));
-        this.oninit.invoke([this, this.app]);
+        if (this.sessionEnabled) {
+            this.app.use(new express_session(config));
+        }
         console.log('---------------------');
         console.log('Fast Api Init');
         console.log(`Port: ${this.port}`);
