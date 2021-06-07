@@ -24,6 +24,18 @@ class FastApi {
         this.fileUploadProvider = null;
         this.fileDownloadProvider = null;
         this.bodyParserConfig = null;
+        this.sessionConfig = null;
+        this.sessionEnabled = true;
+    }
+    /**
+     * 
+     * @param {express_session.SessionOptions} config 
+     */
+    setSession(config){
+        this.sessionConfig = config;
+    }
+    disableSession(){
+        this.sessionEnabled = false;
     }
     setBodyParser(config){
         this.bodyParserConfig = config;
@@ -78,6 +90,9 @@ class FastApi {
                 maxAge: 1000 * 60 * 60 * 24 // 24 Hours
             }
         };
+        if(this.sessionConfig){
+            config = {...this.sessionConfig, secret: 'fastapi'};
+        }
         if (this.redisEnabled) {
             config = { ...config, store: new RedisStore({ client: redis.createClient(this.redisConfig) }) };
         }
@@ -107,6 +122,10 @@ class FastApi {
         console.log('---------------------');
         return this;
     }
+    /**
+     * 
+     * @param {RedisStoreOptions} config 
+     */
     assignRedis(config) {
         this.redisEnabled = true;
         this.redisConfig = config
