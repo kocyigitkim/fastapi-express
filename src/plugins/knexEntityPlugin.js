@@ -1,13 +1,11 @@
 const { default: knex } = require('knex');
-const SchemaInspector = require('knex-schema-inspector');
 const KnexPlugin = require('./knexplugin');
-
+const schemaLoader = require('knex-schema-loader');
 class EntityPlugin {
     constructor(name = "entity", knexPluginName = "db") {
         this.name = name;
         this.knexPluginName = knexPluginName;
         this.schemas = {};
-        this.schemaInspector = null;
         this.knex = null;
         this.entityManagers = {};
     }
@@ -27,25 +25,26 @@ class EntityPlugin {
     async getterMethod(ctx, entityName) {
         const knex = (ctx[this.knexPluginName])();
         if (!this.knex) this.knex = knex;
-        if (!this.SchemaInspector) {
-            this.schemaInspector = SchemaInspector.default(knex);
-        }
-        if (!this.schemas[entityName]) {
-            this.schemas[entityName] = await this.schemaInspector.columnInfo(entityName);
-        }
+        try {
+            if (!this.schemas[entityName]) {
+                this.schemas[entityName] = await schemaLoader.getColumns(knex, entityName);
+            }
+        } catch (err) { console.error(err); }
         if (this.entityManagers[entityName]) return this.entityManagers[entityName];
         var entityManager = new EntityManager(knex, entityName, this.schemas[entityName], this.encoderFunction, this.decoderFunction);
-        for (var entityField of entityManager.schema) {
-            if (entityField.name.endsWith("Id") && entityField.name.length > 2) {
-                var subEntityName = entityField.name.substr(0, entityField.name.length - 2);
-                entityManager.subEntities.push({
-                    name: subEntityName,
-                    foreignKey: entityField.name,
-                    key: 'Id',
-                    manager: await this.getterMethod(ctx, subEntityName)
-                });
+        try {
+            for (var entityField of Object.values(entityManager.schema)) {
+                if (entityField.name.endsWith("Id") && entityField.name.length > 2) {
+                    var subEntityName = entityField.name.substr(0, entityField.name.length - 2);
+                    entityManager.subEntities.push({
+                        name: subEntityName,
+                        foreignKey: entityField.name,
+                        key: 'Id',
+                        manager: await this.getterMethod(ctx, subEntityName)
+                    });
+                }
             }
-        }
+        } catch (err) { console.error(err); }
         this.entityManagers[entityName] = entityManager;
         return entityManager;
     }
@@ -59,16 +58,17 @@ class EntityManager {
      * @param {Array} schema
      */
     constructor(db, entityName, schema, encoderFunction, decoderFunction) {
+        const schemaValues = Object.values(schema);
         this.encoderFunction = encoderFunction || ((entity, data) => data);
         this.decoderFunction = decoderFunction || ((entity, data) => data);
         this.db = db;
         this.entityName = entityName;
         this.schema = schema;
-        this.createDate = schema.filter(p => p.name == "CreateDate" || p.name == "createdon" || p.name == "CreatedDate" || p.name == "CreatedOn")[0];
-        this.updateDate = schema.filter(p => p.name == "UpdateDate" || p.name == "modifiedon" || p.name == "updatedon" || p.name == "UpdateDate" || p.name == "ModifiedOn" || p.name == "UpdatedOn")[0];
-        this.isDeleted = schema.filter(p => p.name == "IsDeleted" || p.name == "deleted" || p.name == "isdeleted")[0];
-        this.isActive = schema.filter(p => p.name == "IsActive" || p.name == "IsActivated" || p.name == "isactivated" || p.name == "isactive")[0];
-        this.primaryKey = schema.filter(p => p.name == schema + "Id" || p.name == "Id")[0];
+        this.createDate = schema && schemaValues.filter(p => p.name == "CreateDate" || p.name == "createdon" || p.name == "CreatedDate" || p.name == "CreatedOn")[0];
+        this.updateDate = schema && schemaValues.filter(p => p.name == "UpdateDate" || p.name == "modifiedon" || p.name == "updatedon" || p.name == "UpdateDate" || p.name == "ModifiedOn" || p.name == "UpdatedOn")[0];
+        this.isDeleted = schema && schemaValues.filter(p => p.name == "IsDeleted" || p.name == "deleted" || p.name == "isdeleted")[0];
+        this.isActive = schema && schemaValues.filter(p => p.name == "IsActive" || p.name == "IsActivated" || p.name == "isactivated" || p.name == "isactive")[0];
+        this.primaryKey = schema && schemaValues.filter(p => p.name == entityName + "Id" || p.name == "Id")[0];
         this.subEntities = [];
     }
     processRecords(records) {
@@ -102,8 +102,8 @@ class EntityManager {
         if (this.updateDate) {
             entity[this.updateDate.name] = new Date();
         }
-        entity = {...entity};
-        
+        entity = { ...entity };
+
         var isSuccess = false;
         var pkey = entity[this.primaryKey.name];
         if (pkey) {
