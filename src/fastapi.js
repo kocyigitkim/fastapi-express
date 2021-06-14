@@ -131,9 +131,10 @@ class FastApi {
     }
     async listen() {
         console.log('Fast Api Listen');
-        this.app.listen(this.port, (() => {
+        var server = this.app.listen(this.port, (() => {
             this.onlisten.invoke([this, this.app]);
         }).bind(this));
+        this.server = server;
         console.log('Server is up');
         console.log('---------------------');
         return this;
