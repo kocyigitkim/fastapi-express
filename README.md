@@ -7,11 +7,11 @@ We are building best experience for you.
 
 # Getting Started
 
-You can start with this boilerplate project:
-: [Go to repository](https://github.com/kocyigitkim/fastapi-boilerplate)
+You can start with this boilerplate project
+- [Go to repository](https://github.com/kocyigitkim/fastapi-boilerplate)
 
 You can use fastapi-client for access endpoint easily on client apps
-: [Go to repository](https://github.com/kocyigitkim/fastapi-client)
+- [Go to repository](https://github.com/kocyigitkim/fastapi-client)
 
  # What we are supports?
  - We are provide predefined in-memory session management via ctx.session pointer
