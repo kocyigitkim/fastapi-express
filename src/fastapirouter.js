@@ -114,7 +114,7 @@ function prepareAction(_this, action, isGet, disableAutoResponse = false) {
     var isPromise = _response instanceof Promise;
     try {
       if (isPromise) _response = await _response.catch(console.error);
-    } catch {}
+    } catch { }
     if (!disableAutoResponse) {
       res.json(_response);
     }
@@ -174,6 +174,20 @@ class FastApiRouter {
         this.__proto__.__proto__[httpMethod].call(this, methodPathName, value);
       }
     }
+  }
+  registerAction(key, action) {
+    var methodDelimiterIndex = key.indexOf("_");
+    var httpMethod = "get";
+    var methodName = null;
+    if (methodDelimiterIndex > -1) {
+      httpMethod = key.substr(0, methodDelimiterIndex);
+      methodName = key.substr(methodDelimiterIndex + 1);
+    } else {
+      methodName = key;
+    }
+    httpMethod = httpMethod.toLowerCase();
+    var methodPathName = methodName.toLowerCase();
+    this[httpMethod].call(this, methodPathName, action);
   }
 
   use(app) {
