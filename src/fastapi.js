@@ -26,6 +26,8 @@ class FastApi {
         this.bodyParserConfig = null;
         this.sessionConfig = null;
         this.sessionEnabled = true;
+        this.apiContext = new fastapirouter.FastApiPluginContext();
+        this.apiContext.app = this;
     }
     /**
      * 
@@ -47,12 +49,16 @@ class FastApi {
     setBodyParser(config) {
         this.bodyParserConfig = config;
     }
-    registerPlugin(pluginDefinition) {
-        fastapirouter.registerPluginEx(pluginDefinition);
+    registerPlugin(plugin) {
+        this.apiContext.plugins.push({
+            name: plugin.name,
+            plugin: plugin,
+            isGetter: true,
+        });
         return this;
     }
     registerPluginByObject(name, obj) {
-        fastapirouter.registerPlugin(name, obj);
+        this.apiContext.plugins.push({ name: name, plugin: obj, isGetter: false });
         return this;
     }
     registerRouter(routerPath, basepath) {
@@ -64,10 +70,10 @@ class FastApi {
             const definition = require(file);
             if (definition.default) {
                 const _default = definition.default;
-                (new _default()).use(this.app);
+                (new _default()).init(this).use(this.app);
             }
             else {
-                (new definition()).use(this.app);
+                (new definition()).init(this).use(this.app);
             }
         }
         return this;

@@ -1,12 +1,13 @@
 const express = require("express");
+const FastApi = require("./fastapi");
 const objectTransformer = require("./objectTransformer");
 class FastApiPluginContext {
-  static plugins = [];
-  static fileUploadPlugins = [];
-  static fileDownloadPlugins = [];
-  static middlewares = [];
+  plugins = [];
+  fileUploadPlugins = [];
+  fileDownloadPlugins = [];
+  middlewares = [];
 }
-
+module.exports.FastApiPluginContext = FastApiPluginContext;
 
 const MiddleWareStatus = {
   Success: 0,
@@ -34,28 +35,33 @@ class FastApiPlugin {
 module.exports.FastApiPlugin = FastApiPlugin;
 
 class FastApiContext {
-  constructor() {
-    this.req = express.request;
-    this.res = express.response;
-    this.next = express.NextFunction;
+  constructor(initial) {
+    /** @type {express.Request} */
+    this.req = null;
+    /** @type {express.Response} */
+    this.res = null;
+    /** @type {express.NextFunction} */
+    this.next = null;
+    /** @type {Object} */
     this.body = null;
+    /** @type {Object} */
     this.session = null;
+    /** @type {Boolean} */
+    this.isGet = false;
+    /** @type {Boolean} */
+    this.isPost = false;
+    /** @type {FastApiPluginContext} */
+    this.apiContext = null;
+    for (var k in initial) {
+      this[k] = initial[k];
+    }
   }
-  static registerPlugin(name, plugin) {
-    FastApiPluginContext.plugins.push({ name, plugin, isGetter: false });
-  }
-  static registerPluginEx(plugin) {
-    FastApiPluginContext.plugins.push({
-      name: plugin.name,
-      plugin: plugin,
-      isGetter: true,
-    });
+  /** @type {FastApi} */
+  get app() {
+    return this.apiContext.app;
   }
 }
 module.exports.FastApiContext = FastApiContext;
-
-module.exports.registerPlugin = this.FastApiContext.registerPlugin;
-module.exports.registerPluginEx = this.FastApiContext.registerPluginEx;
 
 module.exports.FastApiResponse = class FastApiResponse {
   constructor(success, data, error) {
@@ -65,10 +71,11 @@ module.exports.FastApiResponse = class FastApiResponse {
   }
 };
 
-function prepareAction(_this, action, isGet, disableAutoResponse = false) {
+function prepareAction(_this, action, isGet, disableAutoResponse = false, apiContext) {
   return async (req, res, next) => {
     const reqBody = { ...(req.body || {}), ...(req.query || {}) };
-    const args = {
+    apiContext = _this.apiContext;
+    const args = new FastApiContext({
       req: req,
       res: res,
       next: next,
@@ -76,14 +83,15 @@ function prepareAction(_this, action, isGet, disableAutoResponse = false) {
       session: req.session,
       isGet: Boolean(isGet),
       isPost: !Boolean(isGet),
-    };
+      apiContext: apiContext
+    });
 
     args.transform = ((body, schema) => {
       return objectTransformer.transform(body, schema);
     }).bind(args, reqBody);
 
     var nexts = [];
-    for (var plugin of FastApiPluginContext.plugins) {
+    for (var plugin of apiContext.plugins) {
       if (plugin.isGetter && plugin.plugin.getterMethod) {
         args[plugin.name] = plugin.plugin.getterMethod.bind(plugin.plugin);
       } else {
@@ -125,6 +133,7 @@ class FastApiRouter {
   constructor(controllerName, autoRegister = true) {
     this.controllerName = controllerName;
     this.router = express.Router();
+    this.apiContext = null;
     if (autoRegister) {
       if (
         this.__proto__ &&
@@ -139,22 +148,22 @@ class FastApiRouter {
   }
 
   get(actionName, action) {
-    this.router.get("/" + actionName, prepareAction(this, action, true));
+    this.router.get("/" + actionName, prepareAction(this, action, true, false, this.apiContext));
   }
   head(actionName, action) {
-    this.router.head("/" + actionName, prepareAction(this, action, true));
+    this.router.head("/" + actionName, prepareAction(this, action, true, false, this.apiContext));
   }
   post(actionName, action) {
-    this.router.post("/" + actionName, prepareAction(this, action));
+    this.router.post("/" + actionName, prepareAction(this, action, false, false, this.apiContext));
   }
   patch(actionName, action) {
-    this.router.patch("/" + actionName, prepareAction(this, action));
+    this.router.patch("/" + actionName, prepareAction(this, action, false, false, this.apiContext));
   }
   delete(actionName, action) {
-    this.router.delete("/" + actionName, prepareAction(this, action));
+    this.router.delete("/" + actionName, prepareAction(this, action, false, false, this.apiContext));
   }
   custom(actionName, action) {
-    this.router.use("/" + actionName, prepareAction(this, action, null, true));
+    this.router.use("/" + actionName, prepareAction(this, action, null, true, this.apiContext));
   }
   register() {
     for (var key of Object.getOwnPropertyNames(this.__proto__)) {
@@ -192,6 +201,10 @@ class FastApiRouter {
 
   use(app) {
     app.use("/api/" + this.controllerName, this.router);
+  }
+  init(app) {
+    this.apiContext = app.apiContext;
+    return this;
   }
 }
 

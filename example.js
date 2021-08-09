@@ -16,7 +16,7 @@ api.oninit.addHandler(() => {
     api.registerPlugin(new PermissionPlugin("permissions", accessGrantedAction));
     api.registerRouter("./example", __dirname);
     //api.registerFileUploadProvider();
-    api.registerReact("/", "./example/reactexample");
+    api.registerReact("/", "./example/reactexample", 3000);
 });
 
 api.run();
