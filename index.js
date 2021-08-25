@@ -1,22 +1,4 @@
-class ApiResponse{
-    constructor(data, message = null){
-        this.data = data;
-        this.success = Boolean(data);
-        this.message = message;
-    }
-    setSuccess(data){
-        this.success = true;
-        this.data = data;
-        this.message = null;
-        return this;
-    }
-    setError(message){
-        this.success = false;
-        this.data = null;
-        this.message = message;
-        return this;
-    }
-}
+
 
 module.exports = {
     FastApi: require('./src/fastapi'),
@@ -26,5 +8,6 @@ module.exports = {
     KnexPlugin: require('./src/plugins/knexplugin'),
     KnexEntityPlugin: require('./src/plugins/knexEntityPlugin'),
     FastApiFileUpload: require('./src/fastapifileuploadprovider'),
-    ApiResponse: ApiResponse
+    JSDOC: { ...require('./src/JSDoc') },
+    ApiResponse: require('./src/JSDoc').ApiResponse
 }
