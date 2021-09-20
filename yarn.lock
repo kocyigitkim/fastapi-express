@@ -2083,10 +2083,10 @@ node-preload@^0.2.1:
   dependencies:
     process-on-spawn "^1.0.0"
 
-node-react-serve@1.1.4:
-  version "1.1.4"
-  resolved "https://registry.yarnpkg.com/node-react-serve/-/node-react-serve-1.1.4.tgz#d589bad8b15d94b080963290d3fdbaecc64a0c3e"
-  integrity sha512-NUanwa9nmNgeSiPpsXwSXDqgM3B9d6QWGDMhAirgxcjNmawKTRx1VRPosuKq7G4dVJaHq0ZOM0/gPwIEMPH/RQ==
+node-react-serve@1.1.5:
+  version "1.1.5"
+  resolved "https://registry.yarnpkg.com/node-react-serve/-/node-react-serve-1.1.5.tgz#8afb46c45fc75ec6a75e5959d851cc55c8da15db"
+  integrity sha512-/dwQpD4Vs+u3vWowijZK11VSzGq0t2PRQT2fQouMF8KkN9n/HfjcM/5tEqI4aqGH2a0xYdCtkR6uXliNA62TIg==
   dependencies:
     express "^4.17.1"
     node-fetch "^2.6.1"
