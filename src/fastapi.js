@@ -78,8 +78,8 @@ class FastApi {
         }
         return this;
     }
-    registerReact(basePath = "/", clientPath = "./client", port = 3000) {
-        nodereactserve(this.app, basePath, clientPath, port, true);
+    registerReact(basePath = "/", clientPath = "./client", port = 3000, disablePathReset = false) {
+        nodereactserve(this.app, basePath, clientPath, port, true, disablePathReset);
         return this;
     }
     registerFileDownloadProvider(fileDownloadProvider) {
