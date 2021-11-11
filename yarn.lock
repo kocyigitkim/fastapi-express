@@ -2042,10 +2042,10 @@
   dependencies:
     "process-on-spawn" "^1.0.0"
 
-"node-react-serve@^1.1.6":
-  "integrity" "sha512-myKvl34usbpY07s0yRG7BZsP6iTOWxsvktim3LTJCxmA92V+zgNvXbgYwJZ9N8KlVqd1OFOYsO5qdvrmiCe5vw=="
-  "resolved" "https://registry.npmjs.org/node-react-serve/-/node-react-serve-1.1.6.tgz"
-  "version" "1.1.6"
+"node-react-serve@^1.1.9":
+  "integrity" "sha512-3wa12jhyzUvn8aFJMWq0NRFz9FYdIRX70J4ZF1D00UlSMS12Bp9MZLc9wpUMCVpPESQjM5Uz3hB0TJu5ZpyY5Q=="
+  "resolved" "https://registry.npmjs.org/node-react-serve/-/node-react-serve-1.1.9.tgz"
+  "version" "1.1.9"
   dependencies:
     "express" "^4.17.1"
     "node-fetch" "^2.6.1"
